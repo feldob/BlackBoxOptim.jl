@@ -33,7 +33,7 @@ mutable struct BorgMOEA{FS<:FitnessScheme,V<:Evaluator,P<:Population,M<:GeneticO
     recomb_fit_job::Union{AbstractFitnessEvaluationJob, Nothing} # job for fitness calculation of recombined candidates (for AsyncEval version)
 
     # Set of operators that together define a specific DE strategy.
-    select::TournamentSelector{HatCompare{FS}}         # random individuals selector
+    select::IndividualsSelector        # random individuals selector
     modify::M         # operator to mutate frontier element during restarts
     embed::E          # embedding operator
 
