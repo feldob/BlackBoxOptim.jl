@@ -144,6 +144,7 @@ end
         return (typemin(Int), zero(F))
     else
         u_div_ϵ = clamp(u/ϵ, convert(F, typemin(Int)), convert(F, typemax(Int)))
+        u_div_ϵ = min(u_div_ϵ, typemax(Int)) # ensure that ϵ-box max never above max Int (otherwise trunc error in ceil in next line)
         ix = ceil(Int, u_div_ϵ)
         return (ix, ix-u_div_ϵ)
     end
