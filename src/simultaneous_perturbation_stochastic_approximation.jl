@@ -43,8 +43,8 @@ function ask(spsa::SimultaneousPerturbationSA2)
     theta_plus = spsa.theta + spsa.delta_ck
     theta_minus = spsa.theta - spsa.delta_ck
 
-    [Candidate{Float64}(theta_plus, 1),
-     Candidate{Float64}(theta_minus, 2)]
+    [Candidate{Float64, Float64}(theta_plus, 1),
+     Candidate{Float64, Float64}(theta_minus, 2)]
 end
 
 function tell!(spsa::SimultaneousPerturbationSA2, rankedCandidates::AbstractVector{<:Candidate})

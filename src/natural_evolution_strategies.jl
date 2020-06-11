@@ -262,7 +262,7 @@ mutable struct XNESOpt{F,E<:EmbeddingOperator} <: ExponentialNaturalEvolutionStr
                  fill!(Vector{Float64}(undef, lambda), NaN),
                  mu_learnrate, sigma_learnrate, B_learnrate, max_sigma,
                  ini_lnB === nothing ? ini_xnes_B(search_space(embed)) : ini_lnB, ini_sigma, ini_x, fill(0.0, d, lambda),
-                 [Candidate{F}(fill!(Individual(undef, d), NaN), i) for i in 1:lambda],
+                 [Candidate{F,I}(fill!(GenericIndividual{I}(undef, d), NaN), i) for i in 1:lambda],
                   # temporaries
                   Vector{Float64}(undef, d), Vector{Float64}(undef, d), Vector{Float64}(undef, d),
                   Matrix{Float64}(undef, d, d),

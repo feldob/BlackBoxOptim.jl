@@ -75,10 +75,10 @@ mutable struct TopListArchive{F<:Number, I, FS<:FitnessScheme} <: Archive{F,I,FS
     fitness_history::Vector{TopListFitness{F}}
 
     function TopListArchive(fit_scheme::FS, numdims::Integer,
-                            capacity::Integer = 10) where FS<:FitnessScheme
+                            capacity::Integer = 10, input_type=Float64) where FS<:FitnessScheme
         F = fitness_type(FS)
-        new{F,I,FS}(fit_scheme, time(), numdims, 0, capacity,
-                  TopListIndividual{F,I}[], TopListFitness{F}[]) where I
+        new{F,input_type,FS}(fit_scheme, time(), numdims, 0, capacity,
+                  TopListIndividual{F,input_type}[], TopListFitness{F}[])
     end
 end
 

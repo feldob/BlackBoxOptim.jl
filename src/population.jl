@@ -9,20 +9,22 @@ The base abstract types for population that also stores the candidates
 fitness.
 
 `F` is the fitness type.
+`I` is the input type.
 """
-abstract type PopulationWithFitness{F} <: Population end
+abstract type PopulationWithFitness{F,I} <: Population end
 
-fitness_type(::Type{<:PopulationWithFitness{F}}) where F = F
+fitness_type(::Type{<:PopulationWithFitness{F,I}}) where F = F
+input_type(::Type{<:PopulationWithFitness{F,I}}) where {F,I} = I
 fitness_type(pop::PopulationWithFitness) = fitness_type(typeof(pop))
 candidate_type(::Type{P}) where P<:PopulationWithFitness = Candidate{fitness_type(P)}
 candidate_type(pop::PopulationWithFitness) = candidate_type(typeof(pop))
 
-const AbstractPopulationMatrix = AbstractMatrix{Float64}
+const AbstractPopulationMatrix{I} = AbstractMatrix{I} where {I <: Number}
 
 """
 The simplest `Population` implementation -- a matrix of floats, each column is an individual.
 """
-const PopulationMatrix = Matrix{Float64}
+const PopulationMatrix{I} = Matrix{I} where {I <: Number}
 
 popsize(pop::AbstractPopulationMatrix) = size(pop, 2)
 numdims(pop::AbstractPopulationMatrix) = size(pop, 1)
@@ -37,25 +39,25 @@ viewer(pop::PopulationMatrix, indi_ix) = view(pop, :, indi_ix)
 """
 The default implementation of `PopulationWithFitness{F}`.
 """
-mutable struct FitPopulation{F} <: PopulationWithFitness{F}
-    # The population is a matrix of floats, each column being an individual.
-    individuals::PopulationMatrix
+mutable struct FitPopulation{F,I} <: PopulationWithFitness{F,I}
+    # The population is a matrix of I <: Number, each column being an individual.
+    individuals::PopulationMatrix{I}
 
     nafitness::F
     fitness::Vector{F}
     ntransient::Int                  # how many transient members are in the population
 
-    candi_pool::Vector{Candidate{F}} # pool of reusable candidates
+    candi_pool::Vector{Candidate{F,I}} # pool of reusable candidates
     candi_pool_lock::Threads.SpinLock
 
-    function FitPopulation(individuals::AbstractPopulationMatrix,
+    function FitPopulation(individuals::AbstractPopulationMatrix{I},
                            nafitness::F,
                            fitness::Vector{F} = fill(nafitness, popsize(individuals));
-                           ntransient::Integer=0) where {F}
+                           ntransient::Integer=0) where {F,I}
         popsize(individuals) == length(fitness) ||
             throw(DimensionMismatch("Fitness vector length does not match the population size"))
-        new{F}(individuals, nafitness, copy(fitness), ntransient,
-               Vector{Candidate{F}}(), Threads.SpinLock())
+        new{F,I}(individuals, nafitness, copy(fitness), ntransient,
+               Vector{Candidate{F,I}}(), Threads.SpinLock())
     end
 end
 
@@ -135,9 +137,9 @@ Get individual from a pool, or create one if the pool is empty.
 By default the individual is not initialized, but if `ix` or `candi` is specified,
 the corresponding fields of the new candidate are set to the given values.
 """
-function acquire_candi(pop::FitPopulation{F}) where {F}
+function acquire_candi(pop::FitPopulation{F,I}) where {F,I}
     if isempty(pop.candi_pool)
-        return Candidate{F}(fill!(Individual(undef, numdims(pop)), NaN), -1, pop.nafitness)
+        return Candidate{F,I}(fill!(GenericIndividual{I}(undef, numdims(pop)), NaN), -1, pop.nafitness)
     end
     lock(pop.candi_pool_lock)
     res = pop!(pop.candi_pool)
@@ -149,8 +151,8 @@ function acquire_candi(pop::FitPopulation{F}) where {F}
 end
 
 # FIXME optimize to avoid excessive locking (need to lock only once)
-acquire_candis(pop::FitPopulation{F}, n::Integer) where F =
-    Candidate{F}[acquire_candi(pop) for _ in 1:n]
+acquire_candis(pop::FitPopulation{F, I}, n::Integer) where F =
+    Candidate{F,I}[acquire_candi(pop) for _ in 1:n]
 
 # Get an individual from a pool and sets it to ix-th individual from population.
 function acquire_candi(pop::FitPopulation, ix::Int)

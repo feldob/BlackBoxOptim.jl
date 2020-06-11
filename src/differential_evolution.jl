@@ -75,8 +75,8 @@ end
 """
 Post-process the evolved pair.
 """
-function evolved_pair(de::DiffEvoOpt, target::Candidate{F}, trial::Candidate{F},
-                      op::GeneticOperator, tag::Int = 0) where F
+function evolved_pair(de::DiffEvoOpt, target::Candidate{F, I}, trial::Candidate{F, I},
+                      op::GeneticOperator, tag::Int = 0) where {F,I}
     # embed the trial parameter vector into the search space
     apply!(de.embed, trial.params, de.population, target.index)
     target.extra = trial.extra = op
@@ -85,7 +85,7 @@ function evolved_pair(de::DiffEvoOpt, target::Candidate{F}, trial::Candidate{F},
         reset_fitness!(trial, de.population)
     end
 
-    return Candidate{F}[trial, target]
+    return Candidate{F,I}[trial, target]
 end
 
 function tell!(de::DiffEvoOpt,

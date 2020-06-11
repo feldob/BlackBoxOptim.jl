@@ -9,6 +9,10 @@ struct FrontierIndividual{F, I} <: ArchivedIndividual{F, I}
     n_restarts::Int                     # the number of method restarts so far
     timestamp::Float64                  # when archived
 
+    FrontierIndividual{F, I}(fitness::F,
+                      params::GenericIndividual{I}, tag, num_fevals, n_restarts, timestamp=time()) where {F,I} =
+           new{F, I}(fitness, params, tag, num_fevals, n_restarts, timestamp)
+
     FrontierIndividual(fitness::F,
                    params::GenericIndividual{I}, tag, num_fevals, n_restarts, timestamp=time()) where {F,I} =
         new{F, I}(fitness, params, tag, num_fevals, n_restarts, timestamp)
@@ -60,11 +64,11 @@ mutable struct EpsBoxArchive{N,F,I,FS<:EpsBoxDominanceFitnessScheme} <: Archive{
                   max_size::Integer = 1_000_000,
                   leaf_capacity::Integer = 10,
                   branch_capacity::Integer = 10,
-                  I=Float64) where {N,F} =
-        new{N,F,I,typeof(fit_scheme)}(fit_scheme, time(), 0,
-                                    EpsBoxFrontierIndividual{N,I,F}(nafitness(fit_scheme), GenericIndividual{I}(), 0, 0, 0, NaN),
+                  input_type=Float64) where {N,F} =
+        new{N,F,input_type,typeof(fit_scheme)}(fit_scheme, time(), 0,
+                                    EpsBoxFrontierIndividual{N,input_type,F}(nafitness(fit_scheme), GenericIndividual{input_type}(), 0, 0, 0, NaN),
                                     0, 0, 0, 0, max_size,
-                                    FrontierRTree{N,I,F}(leaf_capacity=leaf_capacity,
+                                    FrontierRTree{N,input_type,F}(leaf_capacity=leaf_capacity,
                                                        branch_capacity=branch_capacity))
 end
 
