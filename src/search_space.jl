@@ -24,16 +24,21 @@ The point of the `SearchSpace`.
 
 The abstract type. It allows different actual implementations to be used,
 e.g `Vector` or `SubArray`.
+    I signifies the type of the inputs
 """
-const AbstractIndividual = AbstractVector{Float64}
+const GenericAbstractIndividual{I} = AbstractVector{I} where {I <: Number}
+const AbstractIndividual = GenericAbstractIndividual{Float64}
 
 """
 The point of the `SearchSpace`.
 
 The concrete type that could be used for storage.
+    I signifies the type of the inputs
 """
-const Individual = Vector{Float64}
+const GenericIndividual{I} = Vector{I} where {I <: Number}
+const Individual = GenericIndividual{Float64}
 
+input_type(i::GenericIndividual{I}) where I = I
 """
 The valid range of values for a specific dimension of `SearchSpace`.
 """

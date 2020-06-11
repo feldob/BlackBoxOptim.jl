@@ -99,14 +99,14 @@ ArchiveOutput(archive::TopListArchive) = TopListArchiveOutput(archive)
 """
 Wrapper for `FrontierIndividual` that allows easy access to the problem fitness.
 """
-struct FrontierIndividualWrapper{F,FA} <: FitIndividual{F}
+struct FrontierIndividualWrapper{F, I, FA} <: FitIndividual{F, I}
     inner::FrontierIndividual{FA}
     fitness::F
 
-    FrontierIndividualWrapper{F,FA}(
+    FrontierIndividualWrapper{F, I, FA}(
             indi::FrontierIndividual{FA},
-            fit_scheme::FitnessScheme{FA}) where {F, FA} =
-        new{F, FA}(indi, convert(F, fitness(indi), fit_scheme))
+            fit_scheme::FitnessScheme{FA}) where {F, I, FA} =
+        new{F, I, FA}(indi, convert(F, fitness(indi), fit_scheme))
 end
 
 params(indi::FrontierIndividualWrapper) = params(indi.inner)
@@ -115,18 +115,19 @@ archived_fitness(indi::FrontierIndividualWrapper) = fitness(indi.inner)
 """
 `EpsBoxArchive`-specific components of the optimization results.
 """
-struct EpsBoxArchiveOutput{N,F,FS<:EpsBoxDominanceFitnessScheme} <: ArchiveOutput
+struct EpsBoxArchiveOutput{N,F,I,FS<:EpsBoxDominanceFitnessScheme} <: ArchiveOutput
     best_fitness::NTuple{N,F}
-    best_candidate::Individual
-    frontier::Vector{FrontierIndividualWrapper{NTuple{N,F},IndexedTupleFitness{N,F}}} # inferred Pareto frontier
+    best_candidate::GenericIndividual{I}
+    frontier::Vector{FrontierIndividualWrapper{NTuple{N,F}, I, IndexedTupleFitness{N,F}}} # inferred Pareto frontier
     fit_scheme::FS
 
-    function EpsBoxArchiveOutput(archive::EpsBoxArchive{N,F}) where {N,F}
+    function EpsBoxArchiveOutput(archive::EpsBoxArchive{N,F, I}) where {N,F, I}
         fit_scheme = fitness_scheme(archive)
-        FIW = FrontierIndividualWrapper{NTuple{N,F}, IndexedTupleFitness{N,F}}
-        new{N,F,typeof(fit_scheme)}(convert(NTuple{N,F}, best_fitness(archive), fit_scheme),
+        FIW = FrontierIndividualWrapper{NTuple{N,F}, I, IndexedTupleFitness{N,F}}
+        cands = FIW[FIW(frontel, fit_scheme) for frontel in pareto_frontier(archive)]
+        new{N,F,I,typeof(fit_scheme)}(convert(NTuple{N,F}, best_fitness(archive), fit_scheme),
                                     best_candidate(archive),
-                                    FIW[FIW(frontel, fit_scheme) for frontel in pareto_frontier(archive)],
+                                    cands,
                                     fit_scheme)
     end
 end

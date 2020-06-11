@@ -49,7 +49,7 @@ Filter `fitnesses` removing all dominated values.
 function nondominated(fitnesses, fit_scheme::EpsBoxDominanceFitnessScheme{N,F}) where {N,F}
     arch = EpsBoxArchive(fit_scheme)
     res = sizehint!(Vector{IndexedTupleFitness{N,F}}(), length(fitnesses))
-    empty_params = Individual()
+    empty_params = GenericIndividual{F}()
     for f in fitnesses
         add_candidate!(arch, f, empty_params)
     end

@@ -1,10 +1,12 @@
 """
 `Archive` saves information about promising solutions during an optimization run.
 """
-abstract type Archive{F,FS<:FitnessScheme} end
+abstract type Archive{F,I,FS<:FitnessScheme} end
 
 numdims(a::Archive) = a.numdims
-fitness_type(a::Archive{F}) where F = F
+fitness_type(a::Archive{F}) where {F} = F
+input_type(a::Archive{F,I}) where {F,I} = I
+
 fitness_scheme(a::Archive) = a.fit_scheme
 
 """
@@ -17,23 +19,23 @@ archived_fitness(fit::Any, a::Archive) = convert(fitness_type(a), fit, fitness_s
 """
 Base class for individuals stored in `Archive`.
 """
-abstract type ArchivedIndividual{F} <: FitIndividual{F} end
+abstract type ArchivedIndividual{F, I} <: FitIndividual{F, I} end
 
 tag(indi::ArchivedIndividual) = indi.tag
 
 """
 Individual stored in `TopListArchive`.
 """
-struct TopListIndividual{F} <: ArchivedIndividual{F}
-    params::Individual
+struct TopListIndividual{F, I} <: ArchivedIndividual{F, I}
+    params::GenericIndividual{I}
     fitness::F
     tag::Int
 
-    TopListIndividual(params::AbstractIndividual, fitness::F, tag::Int) where F =
-        new{F}(params, fitness, tag)
+    TopListIndividual(params::GenericIndividual{I}, fitness::F, tag::Int) where {F,I} =
+        new{F, I}(params, fitness, tag)
 end
 
-Base.:(==)(x::TopListIndividual{F}, y::TopListIndividual{F}) where F =
+Base.:(==)(x::TopListIndividual{F, I}, y::TopListIndividual{F, I}) where {F,I} =
   (x.fitness == y.fitness) && (x.params == y.params)
 
 """
@@ -56,7 +58,7 @@ candidates seen so far.
 The two last best fitness values could be used to estimate a confidence interval for how much improvement
 potential there is.
 """
-mutable struct TopListArchive{F<:Number,FS<:FitnessScheme} <: Archive{F,FS}
+mutable struct TopListArchive{F<:Number, I, FS<:FitnessScheme} <: Archive{F,I,FS}
     fit_scheme::FS        # Fitness scheme used
     start_time::Float64   # Time when archive created, we use this to approximate the starting time for the opt...
     numdims::Int          # Number of dimensions in the optimization problem. Needed for confidence interval estimation.
@@ -64,7 +66,7 @@ mutable struct TopListArchive{F<:Number,FS<:FitnessScheme} <: Archive{F,FS}
     num_fitnesses::Int    # Number of calls to add_candidate
 
     capacity::Int         # Max size of top lists
-    candidates::Vector{TopListIndividual{F}}  # Top candidates and their fitness values
+    candidates::Vector{TopListIndividual{F, I}}  # Top candidates and their fitness values
 
     # Stores a fitness history that we can later print to a csv file.
     # For each magnitude class (as defined by `magnitude_class()` function below) we
@@ -75,8 +77,8 @@ mutable struct TopListArchive{F<:Number,FS<:FitnessScheme} <: Archive{F,FS}
     function TopListArchive(fit_scheme::FS, numdims::Integer,
                             capacity::Integer = 10) where FS<:FitnessScheme
         F = fitness_type(FS)
-        new{F,FS}(fit_scheme, time(), numdims, 0, capacity,
-                  TopListIndividual{F}[], TopListFitness{F}[])
+        new{F,I,FS}(fit_scheme, time(), numdims, 0, capacity,
+                  TopListIndividual{F,I}[], TopListFitness{F}[]) where I
     end
 end
 

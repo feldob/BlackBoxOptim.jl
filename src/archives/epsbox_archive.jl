@@ -1,21 +1,17 @@
 """
 Individual representing the solution from the Pareto set.
 """
-struct FrontierIndividual{F} <: ArchivedIndividual{F}
+struct FrontierIndividual{F, I} <: ArchivedIndividual{F, I}
     fitness::F
-    params::Individual
+    params::GenericIndividual{I}
     tag::Int                            # tag of the individual (e.g. gen.op. ID)
     num_fevals::Int                     # number of fitness evaluations so far
     n_restarts::Int                     # the number of method restarts so far
     timestamp::Float64                  # when archived
 
-    FrontierIndividual{F}(fitness::F,
-                   params, tag, num_fevals, n_restarts, timestamp=time()) where F =
-        new{F}(fitness, params, tag, num_fevals, n_restarts, timestamp)
-
     FrontierIndividual(fitness::F,
-                   params, tag, num_fevals, n_restarts, timestamp=time()) where F =
-        new{F}(fitness, params, tag, num_fevals, n_restarts, timestamp)
+                   params::GenericIndividual{I}, tag, num_fevals, n_restarts, timestamp=time()) where {F,I} =
+        new{F, I}(fitness, params, tag, num_fevals, n_restarts, timestamp)
 end
 
 tag(indi::FrontierIndividual) = indi.tag
@@ -23,9 +19,9 @@ tag(indi::FrontierIndividual) = indi.tag
 """
 Individual stored in `EpsBoxArchive`.
 """
-const EpsBoxFrontierIndividual{N,F<:Number} = FrontierIndividual{IndexedTupleFitness{N,F}}
-const FrontierSpatialIndex{N,F<:Number} = SI.SpatialIndex{Int,N,EpsBoxFrontierIndividual{N,F}}
-const FrontierRTree{N,F<:Number} = SI.RTree{Int,N,EpsBoxFrontierIndividual{N,F}}
+const EpsBoxFrontierIndividual{N,I<:Number,F<:Number} = FrontierIndividual{IndexedTupleFitness{N,F},I}
+const FrontierSpatialIndex{N,I<:Number,F<:Number} = SI.SpatialIndex{Int,N,EpsBoxFrontierIndividual{N,I,F}}
+const FrontierRTree{N,I<:Number,F<:Number} = SI.RTree{Int,N,EpsBoxFrontierIndividual{N,I,F}}
 
 # traits for spatial indexing
 SI.mbrtrait(::Type{EpsBoxFrontierIndividual{N,F}}) where {N,F} = SI.HasMBR{SI.Rect{Int,N}}
@@ -44,12 +40,12 @@ dominated by any other solutions in the archive.
 It also counts the number of candidate solutions that have been added
 and how many ϵ-box progresses have been made.
 """
-mutable struct EpsBoxArchive{N,F,FS<:EpsBoxDominanceFitnessScheme} <: Archive{IndexedTupleFitness{N,F},FS}
+mutable struct EpsBoxArchive{N,F,I,FS<:EpsBoxDominanceFitnessScheme} <: Archive{IndexedTupleFitness{N,F},I,FS}
     fit_scheme::FS        # Fitness scheme used
     start_time::Float64   # Time when archive created, we use this to approximate the starting time for the opt...
 
     num_candidates::Int               # Number of calls to add_candidate!()
-    best_front_elem::EpsBoxFrontierIndividual{N,F} # best frontier element: the candidate with the best aggregated fitness
+    best_front_elem::EpsBoxFrontierIndividual{N,I,F} # best frontier element: the candidate with the best aggregated fitness
     last_progress::Int                # when (wrt num_candidates) last ϵ-progress has occured
     last_restart::Int                 # when (wrt num_dlast) last restart has occured
     n_restarts::Int                   # the counter of the method restarts
@@ -58,16 +54,17 @@ mutable struct EpsBoxArchive{N,F,FS<:EpsBoxDominanceFitnessScheme} <: Archive{In
     max_size::Int         # maximal frontier size
     # TODO allow different frontier containers?
     # see e.g. Altwaijry & Menai "Data Structures in Multi-Objective Evolutionary Algorithms", 2012
-    frontier::FrontierRTree{N,F}  # candidates along the fitness Pareto frontier
+    frontier::FrontierRTree{N,I,F}  # candidates along the fitness Pareto frontier
 
     EpsBoxArchive(fit_scheme::EpsBoxDominanceFitnessScheme{N,F};
                   max_size::Integer = 1_000_000,
                   leaf_capacity::Integer = 10,
-                  branch_capacity::Integer = 10) where {N,F} =
-        new{N,F,typeof(fit_scheme)}(fit_scheme, time(), 0,
-                                    EpsBoxFrontierIndividual{N,F}(nafitness(fit_scheme), Individual(), 0, 0, 0, NaN),
+                  branch_capacity::Integer = 10,
+                  I=Float64) where {N,F} =
+        new{N,F,I,typeof(fit_scheme)}(fit_scheme, time(), 0,
+                                    EpsBoxFrontierIndividual{N,I,F}(nafitness(fit_scheme), GenericIndividual{I}(), 0, 0, 0, NaN),
                                     0, 0, 0, 0, max_size,
-                                    FrontierRTree{N,F}(leaf_capacity=leaf_capacity,
+                                    FrontierRTree{N,I,F}(leaf_capacity=leaf_capacity,
                                                        branch_capacity=branch_capacity))
 end
 
