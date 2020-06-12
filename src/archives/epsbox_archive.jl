@@ -23,13 +23,13 @@ tag(indi::FrontierIndividual) = indi.tag
 """
 Individual stored in `EpsBoxArchive`.
 """
-const EpsBoxFrontierIndividual{N,I<:Number,F<:Number} = FrontierIndividual{IndexedTupleFitness{N,F},I}
-const FrontierSpatialIndex{N,I<:Number,F<:Number} = SI.SpatialIndex{Int,N,EpsBoxFrontierIndividual{N,I,F}}
-const FrontierRTree{N,I<:Number,F<:Number} = SI.RTree{Int,N,EpsBoxFrontierIndividual{N,I,F}}
+const EpsBoxFrontierIndividual{N,F<:Number,I<:Number} = FrontierIndividual{IndexedTupleFitness{N,F},I}
+const FrontierSpatialIndex{N,F<:Number,I<:Number} = SI.SpatialIndex{Int,N,EpsBoxFrontierIndividual{N,F,I}}
+const FrontierRTree{N,F<:Number,I<:Number} = SI.RTree{Int,N,EpsBoxFrontierIndividual{N,F,I}}
 
 # traits for spatial indexing
-SI.mbrtrait(::Type{EpsBoxFrontierIndividual{N,F}}) where {N,F} = SI.HasMBR{SI.Rect{Int,N}}
-SI.mbr(indi::EpsBoxFrontierIndividual{N,F}) where {N,F} = SI.Rect(indi.fitness.index, indi.fitness.index)
+SI.mbrtrait(::Type{EpsBoxFrontierIndividual{N,F,I}}) where {N,F,I} = SI.HasMBR{SI.Rect{Int,N}}
+SI.mbr(indi::EpsBoxFrontierIndividual{N,F,I}) where {N,F,I} = SI.Rect(indi.fitness.index, indi.fitness.index)
 SI.idtrait(::Type{<:EpsBoxFrontierIndividual}) = SI.HasID{Int}
 SI.id(indi::EpsBoxFrontierIndividual) = indi.num_fevals
 
@@ -44,7 +44,7 @@ dominated by any other solutions in the archive.
 It also counts the number of candidate solutions that have been added
 and how many ϵ-box progresses have been made.
 """
-mutable struct EpsBoxArchive{N,F,I,FS<:EpsBoxDominanceFitnessScheme} <: Archive{IndexedTupleFitness{N,F},I,FS}
+mutable struct EpsBoxArchive{N,F,FS<:EpsBoxDominanceFitnessScheme,I} <: Archive{IndexedTupleFitness{N,F},I,FS}
     fit_scheme::FS        # Fitness scheme used
     start_time::Float64   # Time when archive created, we use this to approximate the starting time for the opt...
 
@@ -58,17 +58,17 @@ mutable struct EpsBoxArchive{N,F,I,FS<:EpsBoxDominanceFitnessScheme} <: Archive{
     max_size::Int         # maximal frontier size
     # TODO allow different frontier containers?
     # see e.g. Altwaijry & Menai "Data Structures in Multi-Objective Evolutionary Algorithms", 2012
-    frontier::FrontierRTree{N,I,F}  # candidates along the fitness Pareto frontier
+    frontier::FrontierRTree{N,F,I}  # candidates along the fitness Pareto frontier
 
     EpsBoxArchive(fit_scheme::EpsBoxDominanceFitnessScheme{N,F};
                   max_size::Integer = 1_000_000,
                   leaf_capacity::Integer = 10,
                   branch_capacity::Integer = 10,
-                  input_type=Float64) where {N,F} =
-        new{N,F,input_type,typeof(fit_scheme)}(fit_scheme, time(), 0,
-                                    EpsBoxFrontierIndividual{N,input_type,F}(nafitness(fit_scheme), GenericIndividual{input_type}(), 0, 0, 0, NaN),
+                  inp_type=Float64) where {N,F} =
+        new{N,F,typeof(fit_scheme),inp_type}(fit_scheme, time(), 0,
+                                    EpsBoxFrontierIndividual{N,F, inp_type}(nafitness(fit_scheme), GenericIndividual{inp_type}(), 0, 0, 0, NaN),
                                     0, 0, 0, 0, max_size,
-                                    FrontierRTree{N,input_type,F}(leaf_capacity=leaf_capacity,
+                                    FrontierRTree{N,F, inp_type}(leaf_capacity=leaf_capacity,
                                                        branch_capacity=branch_capacity))
 end
 
@@ -169,8 +169,8 @@ function tagcounts(a::EpsBoxArchive, θ::Number = 1.0)
     return res
 end
 
-function add_candidate!(a::EpsBoxArchive{N,F}, cand_fitness::IndexedTupleFitness{N,F},
-                        candidate, tag::Int=0, num_fevals::Int=-1) where {N,F}
+function add_candidate!(a::EpsBoxArchive{N,F,FS,I}, cand_fitness::IndexedTupleFitness{N,F},
+                        candidate::GenericIndividual{I}, tag::Int=0, num_fevals::Int=-1) where {N,F,FS, I}
     a.num_candidates += 1
     if num_fevals == -1
         num_fevals = a.num_candidates

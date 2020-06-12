@@ -278,9 +278,9 @@ specified sampling `method`. The supported methods are:
  * `uniform`: uniform independent sampling for each dimension
  * `latin_hypercube` (the default): use latin hypercube sampling method
 """
-function rand_individuals(ss::RectSearchSpace, n::Integer; method::Symbol=:latin_hypercube)
+function rand_individuals(ss::RectSearchSpace, n::Integer; method::Symbol=:latin_hypercube, input_type=Float64)
     if method == :uniform
-        return _round!(rand(numdims(ss), n) .* dimdelta(ss) .+ dimmin(ss), ss)
+        return _round!(rand(input_type, numdims(ss), n) .* dimdelta(ss) .+ dimmin(ss), ss)
     elseif method == :latin_hypercube
         return _round!(Utils.latin_hypercube_sampling(dimmin(ss), dimmax(ss), n), ss)
     else

@@ -46,7 +46,7 @@ abort!(estate::ParallelEvaluationState) = (estate.next_index = 0)
 Reset the current `ParallelEvaluationState` and the vector
 of candidates that need fitness evaluation.
 """
-function reset!(estate::ParallelEvaluationState{FA}, candidates::Vector{Candidate{FA}}) where FA
+function reset!(estate::ParallelEvaluationState{FA}, candidates::Vector{<:Candidate{FA}}) where {FA}
     estate.candidates = candidates
     fill!(estate.worker_busy, false)
     empty!(estate.retry_queue)

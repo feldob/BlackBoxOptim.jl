@@ -115,17 +115,17 @@ archived_fitness(indi::FrontierIndividualWrapper) = fitness(indi.inner)
 """
 `EpsBoxArchive`-specific components of the optimization results.
 """
-struct EpsBoxArchiveOutput{N,F,I,FS<:EpsBoxDominanceFitnessScheme} <: ArchiveOutput
+struct EpsBoxArchiveOutput{N,F,FS<:EpsBoxDominanceFitnessScheme,I} <: ArchiveOutput
     best_fitness::NTuple{N,F}
     best_candidate::GenericIndividual{I}
     frontier::Vector{FrontierIndividualWrapper{NTuple{N,F}, I, IndexedTupleFitness{N,F}}} # inferred Pareto frontier
     fit_scheme::FS
 
-    function EpsBoxArchiveOutput(archive::EpsBoxArchive{N,F, I}) where {N,F, I}
+    function EpsBoxArchiveOutput(archive::EpsBoxArchive{N,F,FS,I}) where {N,F,FS,I}
         fit_scheme = fitness_scheme(archive)
         FIW = FrontierIndividualWrapper{NTuple{N,F}, I, IndexedTupleFitness{N,F}}
         cands = FIW[FIW(frontel, fit_scheme) for frontel in pareto_frontier(archive)]
-        new{N,F,I,typeof(fit_scheme)}(convert(NTuple{N,F}, best_fitness(archive), fit_scheme),
+        new{N,F,typeof(fit_scheme),I}(convert(NTuple{N,F}, best_fitness(archive), fit_scheme),
                                     best_candidate(archive),
                                     cands,
                                     fit_scheme)

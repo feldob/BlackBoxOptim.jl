@@ -61,20 +61,20 @@ mutable struct FitPopulation{F,I} <: PopulationWithFitness{F,I}
     end
 end
 
-FitPopulation(fs::FitnessScheme, individuals::PopulationMatrix;
-              ntransient::Integer=0) =
+FitPopulation(fs::FitnessScheme, individuals::PopulationMatrix{I};
+              ntransient::Integer=0) where {I} =
   FitPopulation(individuals, nafitness(fs), ntransient=ntransient)
 
 FitPopulation(fs::FitnessScheme, popsize::Int = 100, dims::Int = 1;
-              ntransient::Integer=0) =
-  FitPopulation(fs, PopulationMatrix(undef, dims, popsize); ntransient=ntransient)
+              ntransient::Integer=0, input_type=Float64) where {I} =
+  FitPopulation(fs, PopulationMatrix{input_type}(undef, dims, popsize); ntransient=ntransient) #TODO extract the Float64
 
 popsize(pop::FitPopulation) = popsize(pop.individuals)-pop.ntransient
 numdims(pop::FitPopulation) = numdims(pop.individuals)
 
 # resize the population
-function Base.resize!(pop::FitPopulation, newpopsize::Integer)
-    new_individuals = PopulationMatrix(undef, numdims(pop), newpopsize+pop.ntransient)
+function Base.resize!(pop::FitPopulation{F,I}, newpopsize::Integer) where {F,I}
+    new_individuals = PopulationMatrix{I}(undef, numdims(pop), newpopsize+pop.ntransient)
     new_individuals[:, 1:min(newpopsize,popsize(pop))] = view(pop.individuals, :, 1:min(newpopsize,popsize(pop)))
     pop.individuals = new_individuals
     resize!(pop.fitness, newpopsize + pop.ntransient)
@@ -151,11 +151,11 @@ function acquire_candi(pop::FitPopulation{F,I}) where {F,I}
 end
 
 # FIXME optimize to avoid excessive locking (need to lock only once)
-acquire_candis(pop::FitPopulation{F, I}, n::Integer) where F =
+acquire_candis(pop::FitPopulation{F, I}, n::Integer) where {F,I} =
     Candidate{F,I}[acquire_candi(pop) for _ in 1:n]
 
 # Get an individual from a pool and sets it to ix-th individual from population.
-function acquire_candi(pop::FitPopulation, ix::Int)
+function acquire_candi(pop::FP, ix::Int) where {FP <: FitPopulation}
     x = acquire_candi(pop)
     copyto!(x.params, viewer(pop, ix))
     x.index = ix
@@ -164,7 +164,7 @@ function acquire_candi(pop::FitPopulation, ix::Int)
 end
 
 # Get an individual from a pool and sets it to another candidate.
-acquire_candi(pop::FitPopulation{F}, candi::Candidate{F}) where F =
+acquire_candi(pop::FP, candi::C) where {F,FP<:FitPopulation{F}, C<:Candidate{F}} =
     copy!(acquire_candi(pop), candi)
 
 """
@@ -208,10 +208,11 @@ Generate a population for a given optimization `problem`.
 function population(problem::OptimizationProblem,
                     options::Parameters = EMPTY_PARAMS,
                     nafitness::F = nafitness(fitness_scheme(problem));
+                    input_type=Float64,
                     ntransient::Integer = 0,
                     method::Symbol = :latin_hypercube) where F
     if !haskey(options, :Population)
-        pop = rand_individuals(search_space(problem), get(options, :PopulationSize, 50) + ntransient, method=method)
+        pop = rand_individuals(search_space(problem), get(options, :PopulationSize, 50) + ntransient, method=method, input_type=input_type)
     else
         pop = options[:Population]
     end

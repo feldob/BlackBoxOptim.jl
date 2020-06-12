@@ -146,7 +146,7 @@ parameters and calculated fitness.
 
 Returns the fitness in the archived format.
 """
-function fitness(params::Individual, e::ProblemEvaluator, tag::Int=0)
+function fitness(params::GenericIndividual{I}, e::ProblemEvaluator, tag::Int=0) where {I}
     e.last_fitness = fit = fitness(params, e.problem)
     e.num_evals += 1
     fita = archived_fitness(fit, e.archive)

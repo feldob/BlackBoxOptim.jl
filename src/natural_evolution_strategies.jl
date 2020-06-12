@@ -39,12 +39,14 @@ mutable struct SeparableNESOpt{F,E<:EmbeddingOperator} <: NaturalEvolutionStrate
             ini_x = copy(ini_x::Individual)
         end
 
+        I = input_type(ini_x)
+
         new{F,E}(embed, lambda,
                  ini_x, fill(1.0, d),
                  Normal(0, 1),
                  mu_learnrate, sigma_learnrate, max_sigma,
                  fill(0.0, d, lambda),
-                 [Candidate{F}(fill!(Individual(undef, d), NaN), i) for i in 1:lambda],
+                 [Candidate{F,I}(fill!(GenericIndividual{I}(undef, d), NaN), i) for i in 1:lambda],
                  # Most modern NES papers use log rather than linear fitness shaping.
                  fitness_shaping_utilities_log(lambda),
                  Vector{Float64}(undef, lambda))
@@ -93,7 +95,7 @@ function ask(snes::SeparableNESOpt)
     return snes.candidates
 end
 
-function tell!(snes::SeparableNESOpt{F}, rankedCandidates::AbstractVector{<:Candidate{F}}) where F
+function tell!(snes::SeparableNESOpt, rankedCandidates::AbstractVector{<:Candidate})
     u = assign_weights!(snes.tmp_Utilities, rankedCandidates, snes.sortedUtilities)
 
     # Calc gradient
@@ -258,6 +260,8 @@ mutable struct XNESOpt{F,E<:EmbeddingOperator} <: ExponentialNaturalEvolutionStr
             apply!(embed, ini_x, rand_individual(search_space(embed)))
         end
 
+        I = input_type(ini_x)
+
         new{F,E}(embed, lambda, fitness_shaping_utilities_log(lambda),
                  fill!(Vector{Float64}(undef, lambda), NaN),
                  mu_learnrate, sigma_learnrate, B_learnrate, max_sigma,
@@ -296,7 +300,7 @@ function ask(xnes::XNESOpt)
     update_candidates!(xnes, xnes.Z)
 end
 
-function tell!(xnes::XNESOpt{F}, rankedCandidates::Vector{Candidate{F}}) where F
+function tell!(xnes::XNESOpt, rankedCandidates::Vector{<:Candidate})
     u = assign_weights!(xnes.tmp_Utilities, rankedCandidates, xnes.sortedUtilities)
 
     update_parameters!(xnes, u)

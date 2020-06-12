@@ -18,14 +18,14 @@ mutable struct DXNESOpt{F,E<:EmbeddingOperator} <: ExponentialNaturalEvolutionSt
     # TODO use Symmetric{Float64} to inmprove exponent etc calculation
     ln_B::Matrix{Float64}           # exponential of lnB
     sigma::Float64                  # step size
-    x::Individual                   # The current incumbent (aka most likely value, mu etc)
+    x::GenericIndividual{Float64}                   # The current incumbent (aka most likely value, mu etc)
     Z::Matrix{Float64}              # current N(0,I) samples
-    candidates::Vector{Candidate{F}}# The last sampled values, now being evaluated
+    candidates::Vector{Candidate{F,Float64}}# The last sampled values, now being evaluated
 
     # temporary variables to minimize GC overhead
-    tmp_x::Individual
-    tmp_dz::Individual
-    tmp_dx::Individual
+    tmp_x::GenericIndividual{Float64}
+    tmp_dz::GenericIndividual{Float64}
+    tmp_dx::GenericIndividual{Float64}
     tmp_lndB::Matrix{Float64}
     tmp_Zu::Matrix{Float64}
     tmp_sBZ::Matrix{Float64}
@@ -44,18 +44,19 @@ mutable struct DXNESOpt{F,E<:EmbeddingOperator} <: ExponentialNaturalEvolutionSt
         if ini_x === nothing
             ini_x = rand_individual(search_space(embed))
         else
-            ini_x = copy(ini_x::Individual)
+            ini_x = copy(ini_x::GenericIndividual{Float64})
             apply!(embed, ini_x, rand_individual(search_space(embed)))
         end
         u = fitness_shaping_utilities_log(lambda)
         moving_threshold, evol_discount, evol_Zscale = calculate_evol_path_params(d, u)
 
+        I = input_type(ini_x)
         new{F,E}(embed, lambda, u, Vector{Float64}(undef, lambda),
             mu_learnrate, 0.0, 0.0, max_sigma,
             moving_threshold, evol_discount, evol_Zscale, 0.9 + 0.15 * log(d),
             fill(NaN, d), ini_lnB === nothing ? ini_xnes_B(search_space(embed)) : ini_lnB, ini_sigma, ini_x,
             fill(NaN, d, lambda),
-            [Candidate{F}(fill!(Individual(undef, d), NaN), i) for i in 1:lambda],
+            [Candidate{F,I}(fill!(GenericIndividual{I}(undef, d), NaN), i) for i in 1:lambda],
             # temporaries
             Vector{Float64}(undef, d), Vector{Float64}(undef, d),
             Vector{Float64}(undef, d), Matrix{Float64}(undef, d, d),
@@ -102,7 +103,7 @@ function ask(dxnes::DXNESOpt)
     update_candidates!(dxnes, dxnes.Z)
 end
 
-function tell!(dxnes::DXNESOpt{F}, rankedCandidates::Vector{Candidate{F}}) where F
+function tell!(dxnes::DXNESOpt, rankedCandidates::Vector{<:Candidate})
     u = assign_weights!(dxnes.tmp_Utilities, rankedCandidates, dxnes.sortedUtilities)
     dxnes.evol_path *= dxnes.evol_discount
     # We'll take the small perf hit for now just so this can run also on pre rc2 julia 0.7s

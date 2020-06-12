@@ -17,12 +17,12 @@ isavailable(worker::MTEvaluatorWorker) = worker.is_available
 # Job object returned by async_update_fitness() method of MultithreadEvaluator
 mutable struct MTFitnessEvalJob{FA, NFA, I, S} <: AbstractFitnessEvaluationJob{FA}
     candidates::I   # candidates iterator
-    next_candidate::Union{Nothing, Tuple{Candidate{FA}, S}} # next candidate and iter state
+    next_candidate::Union{Nothing, Tuple{<:Candidate{FA}, S}} # next candidate and iter state
     nafitness::NFA
 
     npending::Threads.Atomic{Int}   # how many candidates are currently being evaluated
     results_lock::Threads.SpinLock
-    results::Vector{Candidate{FA}}
+    results::Vector{<:Candidate{FA}}
     discarded::Bool
 end
 
@@ -136,8 +136,8 @@ num_evals(eval::MultithreadEvaluator) = eval.num_evals
 # FIXME move these method to abstract Evaluator (it would need to support A and FA)
 archfitness_type(::Type{<:MultithreadEvaluator{F,FA}}) where {F, FA} = FA
 archfitness_type(eval::MultithreadEvaluator) = archfitness_type(typeof(eval))
-candidate_type(::Type{T}) where T<:MultithreadEvaluator = Candidate{archfitness_type(T)}
-candidate_type(eval::MultithreadEvaluator) = candidate_type(typeof(eval))
+candidate_type(::Type{T}, I) where T<:MultithreadEvaluator = Candidate{archfitness_type(T), I}
+candidate_type(eval::MultithreadEvaluator, I) = candidate_type(typeof(eval), I)
 
 nworkers(eval::MultithreadEvaluator) = length(eval.workers)
 
@@ -482,8 +482,8 @@ update_fitness!(f::Any, eval::MultithreadEvaluator, candidate::Candidate; force:
 
 # WARNING it's not efficient to synchronously calculate single fitness using
 # asynchronous `MultithreadEvaluator`
-function fitness(params::Individual, eval::MultithreadEvaluator, tag::Int=0)
-    candi = candidate_type(eval)(params, -1, eval.arch_nafitness, nothing, tag)
+function fitness(params::GI, eval::MultithreadEvaluator, tag::Int=0) where {I,GI<:GenericIndividual{I}}
+    candi = candidate_type(eval, I)(params, -1, eval.arch_nafitness, nothing, tag)
     update_fitness!(eval, (candi,))
     return fitness(candi)
 end

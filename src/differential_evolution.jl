@@ -90,7 +90,7 @@ end
 
 function tell!(de::DiffEvoOpt,
         # archive::Archive, # Skip for now
-        rankedCandidates::Vector{Candidate{F}}) where F
+        rankedCandidates::Vector{<:Candidate})
     n_acceptable_candidates = length(rankedCandidates)÷2
     num_better = 0
     for i in eachindex(rankedCandidates)

@@ -54,7 +54,7 @@ tag(cand::Candidate) = cand.tag
 
 Base.copy(c::Candidate) = Candidate(copy(c.params), c.index, c.fitness, c.extra, c.tag)
 
-function Base.copy!(c::Candidate{F}, o::Candidate{F}) where F
+function Base.copy!(c::Candidate, o::Candidate)
     copyto!(c.params, o.params)
     c.index = o.index
     c.fitness = o.fitness # FIXME if vector?

@@ -1,7 +1,7 @@
 @testset "sNES" begin
 
 function assign_weights_wrapper(candi_ixs::Vector{Int})
-    candidates = BlackBoxOptim.Candidate{Float64}[BlackBoxOptim.Candidate{Float64}([0.0], i, NaN) for i in candi_ixs]
+    candidates = BlackBoxOptim.Candidate{Float64,Float64}[BlackBoxOptim.Candidate{Float64, Float64}([0.0], i, NaN) for i in candi_ixs]
     u = BlackBoxOptim.fitness_shaping_utilities_linear(length(candi_ixs))
     BlackBoxOptim.assign_weights!(similar(u), candidates, u)
 end

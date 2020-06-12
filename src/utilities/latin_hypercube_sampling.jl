@@ -6,6 +6,7 @@ by `mins` and `maxs` using the Latin hypercube algorithm.
 
 Returns `dims`×`n` matrix.
 """
+# FIXME not compatible with inputtype so far
 function latin_hypercube_sampling(mins::AbstractVector{T},
                                   maxs::AbstractVector{T},
                                   n::Integer) where T<:Number
