@@ -280,7 +280,11 @@ specified sampling `method`. The supported methods are:
 """
 function rand_individuals(ss::RectSearchSpace, n::Integer; method::Symbol=:latin_hypercube, input_type=Float64)
     if method == :uniform
-        return _round!(rand(input_type, numdims(ss), n) .* dimdelta(ss) .+ dimmin(ss), ss)
+        res = _round!(randn(numdims(ss), n) .* dimdelta(ss) .+ dimmin(ss), ss)
+        if input_type <: Integer
+            res = trunc.(input_type, res)
+        end
+        return res
     elseif method == :latin_hypercube
         return _round!(Utils.latin_hypercube_sampling(dimmin(ss), dimmax(ss), n), ss)
     else
