@@ -16,6 +16,8 @@ struct FixedGeneticOperatorsMixture <: GeneticOperatorsMixture
     end
 end
 
+FixedGeneticOperatorsMixture(ops::GeneticOperator...) = FixedGeneticOperatorsMixture(collect(ops))
+
 """
 Default implementation of `apply!()` for operators mixture.
 """

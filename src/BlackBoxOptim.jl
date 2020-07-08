@@ -122,6 +122,8 @@ include("optimizer.jl")
 
 # Different optimization algorithms/methods
 include("random_search.jl")
+include("evolutionary_algorithm.jl")
+include("genetic_algorithm.jl")
 include("differential_evolution.jl")
 include("adaptive_differential_evolution.jl")
 include("natural_evolution_strategies.jl")

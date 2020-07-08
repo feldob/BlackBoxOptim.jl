@@ -91,7 +91,7 @@ struct TopListArchiveOutput{F,C} <: ArchiveOutput
     best_candidate::C
 
     TopListArchiveOutput(archive::TopListArchive{F}) where F =
-        new{F,Individual}(best_fitness(archive), best_candidate(archive))
+        new{F,AbstractIndividual}(best_fitness(archive), best_candidate(archive))
 end
 
 ArchiveOutput(archive::TopListArchive) = TopListArchiveOutput(archive)
@@ -117,7 +117,7 @@ archived_fitness(indi::FrontierIndividualWrapper) = fitness(indi.inner)
 """
 struct EpsBoxArchiveOutput{N,F,FS<:EpsBoxDominanceFitnessScheme} <: ArchiveOutput
     best_fitness::NTuple{N,F}
-    best_candidate::Individual
+    best_candidate::AbstractIndividual
     frontier::Vector{FrontierIndividualWrapper{NTuple{N,F},IndexedTupleFitness{N,F}}} # inferred Pareto frontier
     fit_scheme::FS
 

@@ -25,7 +25,7 @@ tag(indi::ArchivedIndividual) = indi.tag
 Individual stored in `TopListArchive`.
 """
 struct TopListIndividual{F} <: ArchivedIndividual{F}
-    params::Individual
+    params::AbstractIndividual
     fitness::F
     tag::Int
 

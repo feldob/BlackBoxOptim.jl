@@ -85,6 +85,7 @@ abstract type PopulationOptimizer <: AskTellOptimizer end
 
 population(popopt::PopulationOptimizer) = popopt.population
 popsize(popopt::PopulationOptimizer) = popsize(population(popopt))
+popsize(m::AbstractMatrix) = size(m, 2)
 
 function setup!(o::SteppingOptimizer)
     # Do nothing, override if you need to setup prior to the optimization loop

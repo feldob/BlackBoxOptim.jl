@@ -28,20 +28,20 @@ a standalone solution (`index` == -1).
 Can carry additional information, like the `tag` or the genetic operator applied (`extra`).
 """
 mutable struct Candidate{F} <: FitIndividual{F}
-    params::Individual
+    params::AbstractIndividual
     index::Int          # index of individual in the population, -1 if unassigned # FIXME nothing if unassigned
     fitness::F          # fitness
 
     extra::Any          # extra information
     tag::Int            # additional information set by the genetic operator
 
-    Candidate{F}(params::Individual, index::Int = -1,
+    Candidate{F}(params::AbstractIndividual, index::Int = -1,
                  fitness::F = NaN,
                  extra::Any = nothing,
                  tag::Int = 0) where {F} =
         new(params, index, fitness, extra, tag)
 
-    Candidate(params::Individual, index::Int = -1,
+    Candidate(params::AbstractIndividual, index::Int = -1,
               fitness::F = NaN,
               extra::Any = nothing,
               tag::Int = 0) where {F} =

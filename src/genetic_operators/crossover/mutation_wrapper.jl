@@ -10,7 +10,7 @@ struct MutationWrapper{OP<:MutationOperator} <: CrossoverOperator{1,1}
 end
 
 function apply!(wrapper::MutationWrapper,
-                target::Individual, targetIndex::Int, pop, parentIndices)
+                target::AbstractIndividual, targetIndex::Int, pop, parentIndices)
     @assert length(parentIndices) == 1
     apply!(wrapper.inner, copyto!(target, viewer(pop, parentIndices[1])), targetIndex)
 end

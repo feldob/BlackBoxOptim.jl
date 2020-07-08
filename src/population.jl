@@ -17,11 +17,12 @@ fitness_type(pop::PopulationWithFitness) = fitness_type(typeof(pop))
 candidate_type(::Type{P}) where P<:PopulationWithFitness = Candidate{fitness_type(P)}
 candidate_type(pop::PopulationWithFitness) = candidate_type(typeof(pop))
 
-const AbstractPopulationMatrix = AbstractMatrix{Float64}
+const AbstractPopulationMatrix = AbstractMatrix{N} where {N<:Number}
 
 """
 The simplest `Population` implementation -- a matrix of floats, each column is an individual.
 """
+# TODO requires a refactoring of PopulationMatrix instance... really that useful!?
 const PopulationMatrix = Matrix{Float64}
 
 popsize(pop::AbstractPopulationMatrix) = size(pop, 2)
@@ -38,17 +39,17 @@ viewer(pop::PopulationMatrix, indi_ix) = view(pop, :, indi_ix)
 The default implementation of `PopulationWithFitness{F}`.
 """
 mutable struct FitPopulation{F} <: PopulationWithFitness{F}
-    # The population is a matrix of floats, each column being an individual.
-    individuals::PopulationMatrix
+    # The population is a matrix, each column being an individual.
+    individuals::AbstractMatrix
 
     nafitness::F
-    fitness::Vector{F}
+    fitness::AbstractVector{F}
     ntransient::Int                  # how many transient members are in the population
 
-    candi_pool::Vector{Candidate{F}} # pool of reusable candidates
+    candi_pool::AbstractVector{Candidate{F}} # pool of reusable candidates
     candi_pool_lock::Threads.SpinLock
 
-    function FitPopulation(individuals::AbstractPopulationMatrix,
+    function FitPopulation(individuals::AbstractMatrix,
                            nafitness::F,
                            fitness::Vector{F} = fill(nafitness, popsize(individuals));
                            ntransient::Integer=0) where {F}
@@ -72,7 +73,8 @@ numdims(pop::FitPopulation) = numdims(pop.individuals)
 
 # resize the population
 function Base.resize!(pop::FitPopulation, newpopsize::Integer)
-    new_individuals = PopulationMatrix(undef, numdims(pop), newpopsize+pop.ntransient)
+    CorrectType = typeof(pop.individuals).parameters[1]
+    new_individuals = Matrix{CorrectType}(undef, numdims(pop), newpopsize+pop.ntransient)
     new_individuals[:, 1:min(newpopsize,popsize(pop))] = view(pop.individuals, :, 1:min(newpopsize,popsize(pop)))
     pop.individuals = new_individuals
     resize!(pop.fitness, newpopsize + pop.ntransient)
@@ -128,6 +130,18 @@ function Base.append!(pop::FitPopulation{F}, extra_pop::FitPopulation{F}) where 
     return pop
 end
 
+#TODO FitPopulation could have a bootstrap operator required for any F that, when implemented, returns plain individuals!?
+function acquire_candi_fresh(pop::FitPopulation{F}) where {F}
+    CorrectType = typeof(pop.individuals).parameters[1]
+    cand_vector = Vector{CorrectType}(undef, numdims(pop))
+
+    if CorrectType <: AbstractFloat
+        fill!(cand_vector, NaN)
+    end
+
+    return Candidate{F}(cand_vector, -1, pop.nafitness)
+end
+
 """
     acquire_candi(pop::FitPopulation[, {ix::Int, candi::Candidate}])
 
@@ -137,7 +151,7 @@ the corresponding fields of the new candidate are set to the given values.
 """
 function acquire_candi(pop::FitPopulation{F}) where {F}
     if isempty(pop.candi_pool)
-        return Candidate{F}(fill!(Individual(undef, numdims(pop)), NaN), -1, pop.nafitness)
+        return acquire_candi_fresh(pop)
     end
     lock(pop.candi_pool_lock)
     res = pop!(pop.candi_pool)
@@ -198,6 +212,14 @@ end
 
 candi_pool_size(pop::FitPopulation) = length(pop.candi_pool)
 
+dispatch_population(pop::Population, nafitness, ntransient) = pop
+function dispatch_population(pop::AbstractPopulationMatrix, nafitness, ntransient)
+    return FitPopulation(pop, nafitness, ntransient=ntransient)
+end
+function dispatch_population(pop, nafitness, ntransient)
+    throw(ArgumentError("\"Population\" parameter is of unsupported type: $(typeof(pop))"))
+end
+
 """
 Generate a population for a given optimization `problem`.
 
@@ -208,18 +230,13 @@ function population(problem::OptimizationProblem,
                     nafitness::F = nafitness(fitness_scheme(problem));
                     ntransient::Integer = 0,
                     method::Symbol = :latin_hypercube) where F
-    if !haskey(options, :Population)
-        pop = rand_individuals(search_space(problem), get(options, :PopulationSize, 50) + ntransient, method=method)
-    else
-        pop = options[:Population]
+    if haskey(options, :Population)
+        return dispatch_population(options[:Population], nafitness, ntransient)
     end
-    if isa(pop, Population)
-        return pop
-    elseif isa(pop, AbstractPopulationMatrix)
-        return FitPopulation(pop, nafitness, ntransient=ntransient)
-    else
-        throw(ArgumentError("\"Population\" parameter is of unsupported type: $(typeof(pop))"))
-    end
+
+    popsize = get(options, :PopulationSize, 50) + ntransient
+    pop = rand_individuals(search_space(problem), popsize, method=method)
+    return dispatch_population(pop, nafitness, ntransient)
 end
 
 """

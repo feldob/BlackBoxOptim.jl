@@ -25,7 +25,7 @@ The point of the `SearchSpace`.
 The abstract type. It allows different actual implementations to be used,
 e.g `Vector` or `SubArray`.
 """
-const AbstractIndividual = AbstractVector{Float64}
+const AbstractIndividual = AbstractVector{<:Real}
 
 """
 The point of the `SearchSpace`.
@@ -91,6 +91,13 @@ dimrange(ss::RectSearchSpace) = tuple.(dimmin(ss), dimmax(ss))
 @deprecate ranges(ss) dimrange(ss)
 
 """
+    dimtype(ind::RectSearchSpace)
+
+Returns the dimtype of all dimensions (for now). Extending spaces must ensure to either override this method or provide the dimtype as above.
+"""
+dimtype(ss::RectSearchSpace) = ss.dimtype
+
+"""
     in(ind::AbstractIndividual, ss::SearchSpace)
 
 Check if given individual lies in the given search space.
@@ -105,27 +112,32 @@ function Base.in(ind::AbstractIndividual, ss::RectSearchSpace)
 end
 
 """
-`SearchSpace` defined by a continuous range of valid values for each dimension.
+`SearchSpace` defined by a range of valid values for each dimension.
 """
+#FIXME naming is missleading now that all real types are supported here; just go with RectSearchSpace?
+# ContinuousRectSearchSpace = RectSearchSpace
+# TODO generalize dimtype to Vector{DataType} to allow mixed dimensions
 struct ContinuousRectSearchSpace <: RectSearchSpace
-    dimmin::Vector{Float64}    # minimal valid value per dimension
-    dimmax::Vector{Float64}    # maximal valid value per dimension
-    dimdelta::Vector{Float64}  # delta/diameter (dimmax-dimmin) per dimension
+    dimmin::Vector{<:Real}    # minimal valid value per dimension
+    dimmax::Vector{<:Real}    # maximal valid value per dimension
+    dimdelta::Vector{<:Real}  # delta/diameter (dimmax-dimmin) per dimension
+    dimtype::DataType        # type of the values within
 
     function ContinuousRectSearchSpace(
         dimmin::AbstractVector{<:Real},
-        dimmax::AbstractVector{<:Real}
+        dimmax::AbstractVector{<:Real},
+        dimtype::DataType = Float64
     )
         length(dimmin) == length(dimmax) ||
             throw(DimensionMismatch("dimmin and dimmax should have the same length"))
         all(xy -> xy[1] <= xy[2], zip(dimmin, dimmax)) ||
             throw(ArgumentError("dimmin should not exceed dimmax"))
-        new(dimmin, dimmax, dimmax .- dimmin)
+        new(dimmin, dimmax, dimmax .- dimmin, dimtype)
     end
 end
 
-ContinuousRectSearchSpace(ranges) =
-    ContinuousRectSearchSpace(getindex.(ranges, 1), getindex.(ranges, 2))
+ContinuousRectSearchSpace(ranges, dimtype::DataType = Float64) =
+    ContinuousRectSearchSpace(getindex.(ranges, 1), getindex.(ranges, 2), dimtype)
 
 Base.:(==)(a::ContinuousRectSearchSpace,
            b::ContinuousRectSearchSpace) =
@@ -166,10 +178,12 @@ struct MixedPrecisionRectSearchSpace <: RectSearchSpace
     dimmax::Vector{Float64}
     dimdelta::Vector{Float64}
     dimdigits::Vector{Int}
+    dimtype::DataType
 
     function MixedPrecisionRectSearchSpace(dimmin::AbstractVector,
                                            dimmax::AbstractVector,
-                                           dimdigits::AbstractVector{<:Integer})
+                                           dimdigits::AbstractVector{<:Integer},
+                                           dimtype::DataType = Float64)
         length(dimmin) == length(dimmax) == length(dimdigits) ||
             throw(DimensionMismatch("dimmin, dimmax and dimdigits should have the same length"))
         dmin = Float64[dimdigits[i] >= 0 ? round(dimmin[i], digits=dimdigits[i]) : dimmin[i] for i in eachindex(dimdigits)]
@@ -177,7 +191,7 @@ struct MixedPrecisionRectSearchSpace <: RectSearchSpace
         all(xy -> xy[1] <= xy[2], zip(dmin, dmax)) ||
             throw(ArgumentError("discretized dimmin should not exceed dimmax"))
         new(dmin, dmax, dmax .- dmin,
-            copyto!(Vector{Int}(undef, length(dimdigits)), dimdigits))
+            copyto!(Vector{Int}(undef, length(dimdigits)), dimdigits), dimtype)
     end
 end
 
@@ -213,25 +227,26 @@ if specified, `dimdigits` precision for each dimension.
 Returns `MixedPrecisionRectSearchSpace` if there's at least one dimension
 with specified precision (dimdigits[i] ≥ 0), otherwise `ContinuousRectSearchSpace`.
 """
-RectSearchSpace(dimranges::AbstractVector;
+
+RectSearchSpace(dimranges::AbstractVector, dimtype::DataType = Float64;
                 dimdigits::Union{AbstractVector{<:Integer}, Nothing} = nothing) =
     dimdigits === nothing || all(ddigits -> ddigits < 0, dimdigits) ?
-        ContinuousRectSearchSpace(dimranges) :
-        MixedPrecisionRectSearchSpace(dimranges, dimdigits)
+        ContinuousRectSearchSpace(dimranges, dimtype) :
+        MixedPrecisionRectSearchSpace(dimranges, dimdigits, dimtype)
 
 """
 Create `RectSearchSpace` with given number of dimensions
 and given range of valid values for each dimension.
 """
-RectSearchSpace(numdims::Integer, range=(0.0, 1.0); dimdigits::Union{Integer, Nothing} = nothing) =
-    RectSearchSpace(fill(range, numdims);
+RectSearchSpace(numdims::Integer, range=(0.0, 1.0), dimtype::DataType = Float64; dimdigits::Union{Integer, Nothing} = nothing) =
+    RectSearchSpace(fill(range, numdims), dimtype;
                     dimdigits = dimdigits !== nothing && dimdigits >= 0 ? fill(dimdigits, numdims) : nothing)
 
 @deprecate symmetric_search_space(numdims, range=(0.0, 1.0); dimdigits=nothing) RectSearchSpace(numdims, range, dimdigits=dimdigits)
 
 # round x to fit ss requirements
 # by default it does nothing
-_round!(x::Union{AbstractVector, AbstractMatrix}, ss::RectSearchSpace) = x
+_round!(x, ss::RectSearchSpace) = x
 
 function _round!(x::AbstractVector, ss::MixedPrecisionRectSearchSpace)
     length(x) == numdims(ss) ||
@@ -259,11 +274,31 @@ function _round!(x::AbstractMatrix, ss::MixedPrecisionRectSearchSpace)
     return x
 end
 
+function ensure_type(indiv::AbstractArray{Float64}, dimtype::DataType)
+    if dimtype == Float64
+        return indiv
+    elseif dimtype <: Integer
+        indiv = round.(dimtype, indiv)
+    end
+
+    return convert.(dimtype, indiv)
+end
+
+"""
+Ensure correct value precision and/or type.
+"""
+function embed(ind, ss::RectSearchSpace)
+    ind = _round!(ind, ss)
+    return ensure_type(ind, dimtype(ss))
+end
+
 """
 Generate one random candidate.
 """
-rand_individual(ss::RectSearchSpace) =
-    _round!(rand(numdims(ss)) .* dimdelta(ss) .+ dimmin(ss), ss)
+function rand_individual(ss::RectSearchSpace)
+    indiv = rand(numdims(ss)) .* dimdelta(ss) .+ dimmin(ss)
+    return embed(indiv, ss)
+end
 
 """
     rand_individuals(ss, n; [method=:latin_hypercube])
@@ -274,13 +309,16 @@ specified sampling `method`. The supported methods are:
  * `latin_hypercube` (the default): use latin hypercube sampling method
 """
 function rand_individuals(ss::RectSearchSpace, n::Integer; method::Symbol=:latin_hypercube)
+    local raw_individuals
     if method == :uniform
-        return _round!(rand(numdims(ss), n) .* dimdelta(ss) .+ dimmin(ss), ss)
+        raw_individuals = rand(numdims(ss), n) .* dimdelta(ss) .+ dimmin(ss)
     elseif method == :latin_hypercube
-        return _round!(Utils.latin_hypercube_sampling(dimmin(ss), dimmax(ss), n), ss)
+        raw_individuals = Utils.latin_hypercube_sampling(dimmin(ss), dimmax(ss), n)
     else
         throw(ArgumentError("Unknown sampling method \"$method\""))
     end
+
+    return embed(raw_individuals, ss)
 end
 
 @deprecate rand_individuals_lhs(ss::RectSearchSpace, n::Integer) rand_individuals(ss, n, method=:latin_hypercube)

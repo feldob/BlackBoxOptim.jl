@@ -32,7 +32,7 @@ function setup_problem(func, parameters::Parameters)
                                    parameters[:TargetFitness])
 
     # validate fitness: create a random solution from the search space and ensure that fitness(problem) returns fitness_type(problem).
-    ind = rand_individual(search_space(problem))
+    ind = rand_individual(ss)
     res = fitness(ind, problem)
     fitnessT = fitness_type(problem)
     if !isa(res, fitnessT)

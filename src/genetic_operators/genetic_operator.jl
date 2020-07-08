@@ -74,6 +74,12 @@ Placeholder for no-effect genetic operations.
 const NO_GEN_OP = NoMutation()
 
 """
+`EmbeddingOperator` that does nothing.
+"""
+struct NoEmbedding <: EmbeddingOperator end
+apply!(::NoEmbedding, target, pop, target_index) = target
+
+"""
 Adjust the internal parameters of the genetic operator `op` taking into account
 the fitness change.
 
@@ -99,6 +105,7 @@ use `next()` to choose the next operator from the mixture.
 abstract type GeneticOperatorsMixture <: GeneticOperator end
 
 include("operators_mixture.jl")
+include("binary_operators.jl")
 
 include("mutation/mutation_clock.jl")
 include("mutation/polynomial_mutation.jl")
@@ -115,3 +122,5 @@ include("embedding/random_bound.jl")
 include("selector/simple.jl")
 include("selector/radius_limited.jl")
 include("selector/tournament.jl")
+include("selector/truncation.jl")
+include("selector/roulettewheel.jl")

@@ -3,7 +3,7 @@ Individual representing the solution from the Pareto set.
 """
 struct FrontierIndividual{F} <: ArchivedIndividual{F}
     fitness::F
-    params::Individual
+    params::AbstractIndividual
     tag::Int                            # tag of the individual (e.g. gen.op. ID)
     num_fevals::Int                     # number of fitness evaluations so far
     n_restarts::Int                     # the number of method restarts so far

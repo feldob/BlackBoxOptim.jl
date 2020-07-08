@@ -183,7 +183,7 @@ update_fitness!(f::Any, e::ParallelEvaluator, candidate::Candidate;
                 force::Bool=false) = update_fitness!(f, e, [candidate])
 
 # FIXME it's not efficient to calculate fitness like that with `ParallelEvaluator`
-function fitness(params::Individual, e::ParallelEvaluator{F, FA}, tag::Int=0) where {F, FA}
+function fitness(params::AbstractIndividual, e::ParallelEvaluator{F, FA}, tag::Int=0) where {F, FA}
     candi = Candidate{FA}(params, -1, e.arch_nafitness, nothing, tag)
     update_fitness!(e, [candi])
     return candi.fitness

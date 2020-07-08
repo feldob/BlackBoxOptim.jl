@@ -19,6 +19,7 @@ const SingleObjectiveMethods = ParamsDict(
     :simultaneous_perturbation_stochastic_approximation => SimultaneousPerturbationSA2,
     :generating_set_search => GeneratingSetSearcher,
     :probabilistic_descent => direct_search_probabilistic_descent,
+    :ga => ga
 )
 
 const SingleObjectiveMethodNames = sort!(collect(keys(SingleObjectiveMethods)))
@@ -40,3 +41,11 @@ Names of optimization methods accepted by `bboptimize()`,
 """
 const MethodNames = sort!(vcat(SingleObjectiveMethodNames,
                                MultiObjectiveMethodNames))
+
+"""
+Extend the list of valid methods by an Optimizer initializer method of your choice.
+"""
+function add_method_to_bbo(id::Symbol, method::Function)
+   BlackBoxOptim.SingleObjectiveMethods[id] = method
+   push!(BlackBoxOptim.MethodNames, id)
+end

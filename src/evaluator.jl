@@ -146,7 +146,7 @@ parameters and calculated fitness.
 
 Returns the fitness in the archived format.
 """
-function fitness(params::Individual, e::ProblemEvaluator, tag::Int=0)
+function fitness(params::AbstractIndividual, e::ProblemEvaluator, tag::Int=0)
     e.last_fitness = fit = fitness(params, e.problem)
     e.num_evals += 1
     fita = archived_fitness(fit, e.archive)
@@ -168,7 +168,7 @@ is_better(f1::F, f2::F, e::Evaluator) where {F} = is_better(f1, f2, fitness_sche
 
 is_better(candidate, f, e::Evaluator) = is_better(fitness(candidate, e), f, fitness_scheme(e))
 
-function best_of(candidate1::Individual, candidate2::Individual, e::Evaluator)
+function best_of(candidate1::AbstractIndividual, candidate2::AbstractIndividual, e::Evaluator)
     f1 = fitness(candidate1, e)
     f2 = fitness(candidate2, e)
     if is_better(f1, f2, e)
@@ -178,7 +178,7 @@ function best_of(candidate1::Individual, candidate2::Individual, e::Evaluator)
     end
 end
 
-function rank_by_fitness!(e::Evaluator, candidates::AbstractVector{<:Candidate})
+function rank_by_fitness!(e::Evaluator, candidates::AbstractVector{<:Candidate{F}}) where F
     fs = fitness_scheme(e)
     sort!(update_fitness!(e, candidates);
           # FIXME use lt=fitness_scheme(a) when v0.5 #14919 would be fixed

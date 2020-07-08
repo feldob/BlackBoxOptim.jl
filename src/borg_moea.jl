@@ -131,14 +131,14 @@ function recombine_individuals!(alg::BorgMOEA, recomb_op_ix::Int, recomb_op::Cro
     parent_indices = select(alg.select, alg.population,
                             isempty(archive(alg)) ? n_parents : n_parents-1)
     if !isempty(archive(alg))
-        # get one parent from the archive and copy it to the fitrst transient member
+        # get one parent from the archive and copy it to the first transient member
         arch_ix = transient_range(alg.population)[1]
         alg.population[arch_ix] = rand_front_elem(archive(alg))
         push!(parent_indices, arch_ix)
     end
     # Crossover parents and target
     children = acquire_candis(alg.population, numchildren(recomb_op))
-    apply!(recomb_op, Individual[child.params for child in children],
+    apply!(recomb_op, AbstractIndividual[child.params for child in children],
            zeros(Int, length(children)), alg.population, parent_indices)
     for child in children
         apply!(alg.embed, child.params, alg.population, parent_indices[1])
