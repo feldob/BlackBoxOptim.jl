@@ -39,7 +39,8 @@ mutable struct BorgMOEA{FS<:FitnessScheme,V<:Evaluator,P<:Population,M<:GeneticO
 
     function BorgMOEA(
         problem::O,
-        pop::P, recombinate::Vector{CrossoverOperator},
+        pop::P,
+        recombinate::AbstractVector{CrossoverOperator},
         modify::M = M(), embed::E = E(), params = EMPTY_PARAMS) where
             {O<:OptimizationProblem, P<:Population,
              M<:GeneticOperator, E<:EmbeddingOperator}
@@ -70,25 +71,37 @@ const BorgMOEA_DefaultParameters = chain(EpsBoxArchive_DefaultParameters, Params
     :RestartCheckPeriod => 1000,
     :OperatorsUpdatePeriod => 100,
     :MaxStepsWithoutEpsProgress => 100
+
 ))
+default_xo(problem::OptimizationProblem, options::Parameters) = CrossoverOperator[DiffEvoRandBin1(chain(DE_DefaultOptions, options)),
+                                       SimulatedBinaryCrossover(chain(SBX_DefaultOptions, options)),
+                                       SimplexCrossover{3}(chain(SPX_DefaultOptions, options)),
+                                       ParentCentricCrossover{2}(chain(PCX_DefaultOptions, options)),
+                                       ParentCentricCrossover{3}(chain(PCX_DefaultOptions, options)),
+                                       UnimodalNormalDistributionCrossover{2}(chain(UNDX_DefaultOptions, options)),
+                                       UnimodalNormalDistributionCrossover{3}(chain(UNDX_DefaultOptions, options))]
+
+default_mo(problem::OptimizationProblem, options::Parameters) = FixedGeneticOperatorsMixture(GeneticOperator[
+                                MutationClock(PolynomialMutation(search_space(problem), chain(PM_DefaultOptions, options)), 1/numdims(problem)),
+                                MutationClock(UniformMutation(search_space(problem)), 1/numdims(problem))], [0.75, 0.25])
+
+default_eo(problem::OptimizationProblem, options::Parameters) = RandomBound(search_space(problem))
+
+function default_pop(problem::OptimizationProblem, options::ParamsDict)
+    fs = fitness_scheme(problem)
+    _nafitness = nafitness(IndexedTupleFitness{numobjectives(fs),fitness_eltype(fs)})
+    _ntransient = get(opts, :NTransient, 1)
+    return population(problem, options, _nafitness, ntransient=_ntransient)
+end
 
 function borg_moea(problem::OptimizationProblem, options::Parameters = EMPTY_PARAMS)
     opts = chain(BorgMOEA_DefaultParameters, options)
-    fs = fitness_scheme(problem)
-    N = numobjectives(fs)
-    F = fitness_eltype(fs)
-    pop = population(problem, opts, nafitness(IndexedTupleFitness{N,F}), ntransient=1)
-    BorgMOEA(problem, pop, CrossoverOperator[DiffEvoRandBin1(chain(DE_DefaultOptions, options)),
-                                           SimulatedBinaryCrossover(chain(SBX_DefaultOptions, options)),
-                                           SimplexCrossover{3}(chain(SPX_DefaultOptions, options)),
-                                           ParentCentricCrossover{2}(chain(PCX_DefaultOptions, options)),
-                                           ParentCentricCrossover{3}(chain(PCX_DefaultOptions, options)),
-                                           UnimodalNormalDistributionCrossover{2}(chain(UNDX_DefaultOptions, options)),
-                                           UnimodalNormalDistributionCrossover{3}(chain(UNDX_DefaultOptions, options))],
-            FixedGeneticOperatorsMixture(GeneticOperator[
-                                            MutationClock(PolynomialMutation(search_space(problem), chain(PM_DefaultOptions, options)), 1/numdims(problem)),
-                                            MutationClock(UniformMutation(search_space(problem)), 1/numdims(problem))], [0.75, 0.25]),
-            RandomBound(search_space(problem)), opts)
+    pop = get(opts, :Population, default_pop)(problem, opts)
+    xo = get(opts, :CrossoverOperator, default_xo)(problem, options)
+    mo = get(opts, :MutationOperator, default_mo)(problem, options)
+    eo = get(opts, :EmbeddingOperator, default_eo)(problem, options)
+
+    return BorgMOEA(problem, pop, xo, mo, eo, opts)
 end
 
 archive(alg::BorgMOEA) = alg.evaluator.archive
