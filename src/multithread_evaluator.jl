@@ -482,7 +482,7 @@ update_fitness!(f::Any, eval::MultithreadEvaluator, candidate::Candidate; force:
 
 # WARNING it's not efficient to synchronously calculate single fitness using
 # asynchronous `MultithreadEvaluator`
-function fitness(params::Individual, eval::MultithreadEvaluator, tag::Int=0)
+function fitness(params::AbstractIndividual, eval::MultithreadEvaluator, tag::Int=0)
     candi = candidate_type(eval)(params, -1, eval.arch_nafitness, nothing, tag)
     update_fitness!(eval, (candi,))
     return fitness(candi)

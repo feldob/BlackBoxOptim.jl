@@ -16,8 +16,8 @@ mutable struct SimultaneousPerturbationSA2{E<:EmbeddingOperator} <: StochasticAp
     parameters::Parameters
     k::Int
     n::Int
-    theta::Individual
-    delta_ck::Individual
+    theta::AbstractIndividual
+    delta_ck::AbstractIndividual
 
     function SimultaneousPerturbationSA2(problem::OptimizationProblem, embed::E, parameters::Parameters) where {E<:EmbeddingOperator}
         ss = search_space(problem)

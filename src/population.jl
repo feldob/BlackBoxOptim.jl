@@ -104,10 +104,10 @@ Does not allocate any additional space, while still providing the same lookup pe
 """
 viewer(pop::FitPopulation, indi_ix) = view(pop.individuals, :, indi_ix)
 
-Base.setindex!(pop::FitPopulation, indi::Individual, ::Colon, indi_ix::Integer) =
+Base.setindex!(pop::FitPopulation, indi::AbstractIndividual, ::Colon, indi_ix::Integer) =
     setindex!(pop, indi, indi_ix)
 
-function Base.setindex!(pop::FitPopulation, indi::Individual, indi_ix::Integer)
+function Base.setindex!(pop::FitPopulation, indi::AbstractIndividual, indi_ix::Integer)
     pop.individuals[:, indi_ix] = indi
     pop.fitness[indi_ix] = pop.nafitness
     return pop

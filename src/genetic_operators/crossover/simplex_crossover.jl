@@ -21,7 +21,7 @@ const SPX_DefaultOptions = ParamsDict(
 #masscenter(pop, parentIndices) = mapslices(mean, pop[:, parentIndices], 2)
 
 function apply!(xover::SimplexCrossover,
-                target::Individual, targetIndex::Int,
+                target::AbstractIndividual, targetIndex::Int,
                 pop, parentIndices)
     @assert length(parentIndices) == numparents(xover)
 

@@ -65,7 +65,7 @@ mutable struct EpsBoxArchive{N,F,FS<:EpsBoxDominanceFitnessScheme} <: Archive{In
                   leaf_capacity::Integer = 10,
                   branch_capacity::Integer = 10) where {N,F} =
         new{N,F,typeof(fit_scheme)}(fit_scheme, time(), 0,
-                                    EpsBoxFrontierIndividual{N,F}(nafitness(fit_scheme), Individual(), 0, 0, 0, NaN),
+                                    EpsBoxFrontierIndividual{N,F}(nafitness(fit_scheme), Individual(), 0, 0, 0, NaN), #FIXME does not respect the SearchSpace datatype
                                     0, 0, 0, 0, max_size,
                                     FrontierRTree{N,F}(leaf_capacity=leaf_capacity,
                                                        branch_capacity=branch_capacity))

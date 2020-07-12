@@ -12,15 +12,16 @@ function apply!(xover::MultiPointCrossover,
                 pop,
                 parent_indices::AbstractVector{<:Integer})
 
-    # copy parents
     p1, p2 = map(i -> view(pop.individuals, :, i), parent_indices)
-    @inbounds copyto!(targets[1], p1)
-    @inbounds copyto!(targets[2], p2)
+    c1, c2 = map(t -> view(t, :), targets)
+
+    @inbounds copyto!(c1, p1)
+    @inbounds copyto!(c2, p2)
 
     # sample xover positions uniformly at random and swap
     positions= sample(1:numdims(pop), numpoints(xover), replace=false)
-    @inbounds targets[1][positions] = view(p2, positions)
-    @inbounds targets[2][positions] = view(p1, positions)
+    @inbounds c1[positions] = p2[positions]
+    @inbounds c2[positions] = p1[positions]
 
     return targets
 end
@@ -38,9 +39,7 @@ function apply!(mo::BinaryFlipMutation,
 
     amount_positions = ceil(Int, ρ(mo) * length(target))
     positions = sample(1:length(target), amount_positions, replace=false)
-    mutants = view(target, positions)
-    flipped = map(x -> x > 0 ? 0 : 1, mutants)
-    copyto!(mutants, flipped)
+    @inbounds foreach(p -> target[p] = target[p] > 0 ? 0 : 1, positions)
 
     return target
 end

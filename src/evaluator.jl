@@ -139,7 +139,7 @@ problem(e::Evaluator) = e.problem
 num_evals(e::ProblemEvaluator) = e.num_evals
 
 """
-    fitness(params::Individual, e::ProblemEvaluator, tag::Int=0)
+    fitness(params::AbstractIndividual, e::ProblemEvaluator, tag::Int=0)
 
 Evaluate the fitness and implicitly update the archive with the provided
 parameters and calculated fitness.

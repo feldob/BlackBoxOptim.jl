@@ -5,7 +5,7 @@ mutable struct RandomSearcher{SS<:SearchSpace} <: AskTellOptimizer
     name::String
     search_space::SS
     best_fitness          # FIXME fitness type should be known
-    best::Individual
+    best::AbstractIndividual
 
     RandomSearcher(search_space::SS) where {SS<:SearchSpace} =
         new{SS}("Random Search", search_space, nothing)

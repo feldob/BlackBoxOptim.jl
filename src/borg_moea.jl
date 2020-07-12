@@ -87,10 +87,10 @@ default_mo(problem::OptimizationProblem, options::Parameters) = FixedGeneticOper
 
 default_eo(problem::OptimizationProblem, options::Parameters) = RandomBound(search_space(problem))
 
-function default_pop(problem::OptimizationProblem, options::ParamsDict)
+function default_pop(problem::OptimizationProblem, options::ParamsDictChain)
     fs = fitness_scheme(problem)
     _nafitness = nafitness(IndexedTupleFitness{numobjectives(fs),fitness_eltype(fs)})
-    _ntransient = get(opts, :NTransient, 1)
+    _ntransient = get(options, :NTransient, 1)
     return population(problem, options, _nafitness, ntransient=_ntransient)
 end
 

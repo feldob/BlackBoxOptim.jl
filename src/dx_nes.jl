@@ -18,14 +18,14 @@ mutable struct DXNESOpt{F,E<:EmbeddingOperator} <: ExponentialNaturalEvolutionSt
     # TODO use Symmetric{Float64} to inmprove exponent etc calculation
     ln_B::Matrix{Float64}           # exponential of lnB
     sigma::Float64                  # step size
-    x::Individual                   # The current incumbent (aka most likely value, mu etc)
+    x::AbstractIndividual           # The current incumbent (aka most likely value, mu etc)
     Z::Matrix{Float64}              # current N(0,I) samples
     candidates::Vector{Candidate{F}}# The last sampled values, now being evaluated
 
     # temporary variables to minimize GC overhead
-    tmp_x::Individual
-    tmp_dz::Individual
-    tmp_dx::Individual
+    tmp_x::AbstractIndividual
+    tmp_dz::AbstractIndividual
+    tmp_dx::AbstractIndividual
     tmp_lndB::Matrix{Float64}
     tmp_Zu::Matrix{Float64}
     tmp_sBZ::Matrix{Float64}
@@ -44,7 +44,7 @@ mutable struct DXNESOpt{F,E<:EmbeddingOperator} <: ExponentialNaturalEvolutionSt
         if ini_x === nothing
             ini_x = rand_individual(search_space(embed))
         else
-            ini_x = copy(ini_x::Individual)
+            ini_x = copy(ini_x::AbstractIndividual)
             apply!(embed, ini_x, rand_individual(search_space(embed)))
         end
         u = fitness_shaping_utilities_log(lambda)

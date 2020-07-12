@@ -32,12 +32,14 @@ The point of the `SearchSpace`.
 
 The concrete type that could be used for storage.
 """
+# FIXME this limits the search space to Float64. Better generalize to arbitrary type.
 const Individual = Vector{Float64}
 
 """
 The valid range of values for a specific dimension of `SearchSpace`.
 """
 const ParamBounds = Tuple{Float64,Float64}
+const AbstractParamBounds = Tuple{<:Real, <:Real}
 
 numdims(ss::RectSearchSpace) = length(dimmin(ss))
 

@@ -23,7 +23,7 @@ const PCX_DefaultOptions = ParamsDict(
 )
 
 function apply!(xover::ParentCentricCrossover,
-                target::Individual, targetIndex::Int,
+                target::AbstractIndividual, targetIndex::Int,
                 pop, parentIndices)
     @assert length(parentIndices) == numparents(xover)
 

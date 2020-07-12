@@ -29,7 +29,7 @@ function randbeta(xover::SimulatedBinaryCrossover)
 end
 
 function apply!(xover::SimulatedBinaryCrossover,
-                targets::Vector{Individual}, targetIndices::Vector{Int},
+                targets::AbstractVector{<:AbstractIndividual}, targetIndices::Vector{Int},
                 pop, parentIndices)
     @assert length(targets) == 2
     @assert length(targetIndices) == 2

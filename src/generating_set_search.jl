@@ -59,7 +59,7 @@ mutable struct GeneratingSetSearcher{V<:Evaluator, D<:DirectionGenerator, E<:Emb
     step_size_max::Float64       # maximal step size
     step_tol::Float64            # step delta tolerance
     step_size::Float64           # current step size
-    x::Individual
+    x::AbstractIndividual
     xfitness::Float64
 
     function GeneratingSetSearcher(

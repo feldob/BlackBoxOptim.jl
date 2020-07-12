@@ -16,12 +16,12 @@ struct FunctionBasedProblemFamily{F,FS<:FitnessScheme,FO} <: ProblemFamily{FS}
     name::String
     fitness_scheme::FS
     reserved_ss::RectSearchSpace    # search space for the first reserved dimensions
-    range_per_dim::ParamBounds      # Default range per dimension
+    range_per_dim::AbstractParamBounds      # Default range per dimension
     opt_value::FO                   # optional optimal value, or nothing
 
     function FunctionBasedProblemFamily(
             objfunc::Function, name::String,
-            fitness_scheme::FS, range::ParamBounds, opt_value::FO = nothing,
+            fitness_scheme::FS, range::AbstractParamBounds, opt_value::FO = nothing,
             reserved_ss::RectSearchSpace = ZERO_SEARCH_SPACE
     ) where {FS<:FitnessScheme, FO}
         if FO <: Number
@@ -63,19 +63,19 @@ end
 
 @deprecate fixed_dim_problem instantiate
 
-MinimizationProblemFamily(f::Function, name::String, range::ParamBounds, fmin::Float64) =
+MinimizationProblemFamily(f::Function, name::String, range::AbstractParamBounds, fmin::Float64) =
     FunctionBasedProblemFamily(f, name, MinimizingFitnessScheme, range, fmin)
 
-MinimizationProblemFamily(f::Function, name::String, range::ParamBounds) =
+MinimizationProblemFamily(f::Function, name::String, range::AbstractParamBounds) =
     FunctionBasedProblemFamily(f, name, MinimizingFitnessScheme, range)
 
-minimization_problem(f::Function, name::String, range::ParamBounds, ndim::Int) =
+minimization_problem(f::Function, name::String, range::AbstractParamBounds, ndim::Int) =
     instantiate(MinimizationProblemFamily(f, name, range), ndim)
 
-minimization_problem(f::Function, range::ParamBounds, ndim::Int) =
+minimization_problem(f::Function, range::AbstractParamBounds, ndim::Int) =
     instantiate(MinimizationProblemFamily(f, "<unknown>", range), ndim)
 
-minimization_problem(f::Function, name::String, range::ParamBounds, ndim::Int, fmin::Float64) =
+minimization_problem(f::Function, name::String, range::AbstractParamBounds, ndim::Int, fmin::Float64) =
     instantiate(MinimizationProblemFamily(f, name, range, fmin), ndim)
 
 """

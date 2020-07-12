@@ -8,13 +8,13 @@ struct ParallelEvaluatorWorker{P<:OptimizationProblem}
         new{P}(problem)
 end
 
-fitness(params::Individual, worker::ParallelEvaluatorWorker) =
+fitness(params::AbstractIndividual, worker::ParallelEvaluatorWorker) =
     fitness(params, worker.problem)
 
 const ChannelRef{T} = RemoteChannel{Channel{T}}
 const ParallelEvaluatorWorkerRef{P} = ChannelRef{ParallelEvaluatorWorker{P}}
 
-fitness(params::Individual, worker_ref::ParallelEvaluatorWorkerRef{P}) where P =
+fitness(params::AbstractIndividual, worker_ref::ParallelEvaluatorWorkerRef{P}) where P =
     fitness(params, fetch(fetch(worker_ref))::ParallelEvaluatorWorker{P})
 
 """

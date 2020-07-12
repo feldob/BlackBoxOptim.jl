@@ -36,7 +36,7 @@ mutable struct SeparableNESOpt{F,E<:EmbeddingOperator} <: NaturalEvolutionStrate
         if ini_x === nothing
             ini_x = rand_individual(search_space(embed))
         else
-            ini_x = copy(ini_x::Individual)
+            ini_x = copy(ini_x::AbstractIndividual)
         end
 
         new{F,E}(embed, lambda,
@@ -225,14 +225,14 @@ mutable struct XNESOpt{F,E<:EmbeddingOperator} <: ExponentialNaturalEvolutionStr
     # TODO use Symmetric{Float64} to improve exponent etc calculation
     ln_B::Matrix{Float64}           # `log` of "covariation" matrix
     sigma::Float64                  # step size
-    x::Individual                   # center of the population (aka most likely value, `mu` etc)
+    x::AbstractIndividual           # center of the population (aka most likely value, `mu` etc)
     Z::Matrix{Float64}              # current `N(0,I)` samples
     candidates::Vector{Candidate{F}}# the last sampled values, now being evaluated
 
     # temporary variables to minimize GC overhead
-    tmp_x::Individual
-    tmp_dz::Individual
-    tmp_dx::Individual
+    tmp_x::AbstractIndividual
+    tmp_dz::AbstractIndividual
+    tmp_dx::AbstractIndividual
     tmp_lndB::Matrix{Float64}
     tmp_Zu::Matrix{Float64}
     tmp_sBZ::Matrix{Float64}
@@ -254,7 +254,7 @@ mutable struct XNESOpt{F,E<:EmbeddingOperator} <: ExponentialNaturalEvolutionStr
         if ini_x === nothing
             ini_x = rand_individual(search_space(embed))
         else
-            ini_x = copy(ini_x::Individual)
+            ini_x = copy(ini_x::AbstractIndividual)
             apply!(embed, ini_x, rand_individual(search_space(embed)))
         end
 
