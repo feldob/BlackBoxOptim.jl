@@ -118,17 +118,17 @@ end
 """
 #FIXME naming is missleading now that all real types are supported here; just go with RectSearchSpace?
 # ContinuousRectSearchSpace = RectSearchSpace
-# TODO generalize dimtype to Vector{DataType} to allow mixed dimensions
+# TODO generalize dimtype to Vector{Type{<:Real}} to allow mixed dimensions
 struct ContinuousRectSearchSpace <: RectSearchSpace
     dimmin::Vector{<:Real}    # minimal valid value per dimension
     dimmax::Vector{<:Real}    # maximal valid value per dimension
     dimdelta::Vector{<:Real}  # delta/diameter (dimmax-dimmin) per dimension
-    dimtype::DataType        # type of the values within
+    dimtype::Type{<:Real}        # type of the values within
 
     function ContinuousRectSearchSpace(
         dimmin::AbstractVector{<:Real},
         dimmax::AbstractVector{<:Real},
-        dimtype::DataType = Float64
+        dimtype::Type{<:Real} = Float64
     )
         length(dimmin) == length(dimmax) ||
             throw(DimensionMismatch("dimmin and dimmax should have the same length"))
@@ -138,7 +138,7 @@ struct ContinuousRectSearchSpace <: RectSearchSpace
     end
 end
 
-ContinuousRectSearchSpace(ranges, dimtype::DataType = Float64) =
+ContinuousRectSearchSpace(ranges, dimtype::Type{<:Real} = Float64) =
     ContinuousRectSearchSpace(getindex.(ranges, 1), getindex.(ranges, 2), dimtype)
 
 Base.:(==)(a::ContinuousRectSearchSpace,
@@ -180,12 +180,12 @@ struct MixedPrecisionRectSearchSpace <: RectSearchSpace
     dimmax::Vector{Float64}
     dimdelta::Vector{Float64}
     dimdigits::Vector{Int}
-    dimtype::DataType
+    dimtype::Type{<:Real}
 
     function MixedPrecisionRectSearchSpace(dimmin::AbstractVector,
                                            dimmax::AbstractVector,
                                            dimdigits::AbstractVector{<:Integer},
-                                           dimtype::DataType = Float64)
+                                           dimtype::Type{<:Real} = Float64)
         length(dimmin) == length(dimmax) == length(dimdigits) ||
             throw(DimensionMismatch("dimmin, dimmax and dimdigits should have the same length"))
         dmin = Float64[dimdigits[i] >= 0 ? round(dimmin[i], digits=dimdigits[i]) : dimmin[i] for i in eachindex(dimdigits)]
@@ -230,7 +230,7 @@ Returns `MixedPrecisionRectSearchSpace` if there's at least one dimension
 with specified precision (dimdigits[i] ≥ 0), otherwise `ContinuousRectSearchSpace`.
 """
 
-RectSearchSpace(dimranges::AbstractVector, dimtype::DataType = Float64;
+RectSearchSpace(dimranges::AbstractVector, dimtype::Type{<:Real} = Float64;
                 dimdigits::Union{AbstractVector{<:Integer}, Nothing} = nothing) =
     dimdigits === nothing || all(ddigits -> ddigits < 0, dimdigits) ?
         ContinuousRectSearchSpace(dimranges, dimtype) :
@@ -240,7 +240,7 @@ RectSearchSpace(dimranges::AbstractVector, dimtype::DataType = Float64;
 Create `RectSearchSpace` with given number of dimensions
 and given range of valid values for each dimension.
 """
-RectSearchSpace(numdims::Integer, range=(0.0, 1.0), dimtype::DataType = Float64; dimdigits::Union{Integer, Nothing} = nothing) =
+RectSearchSpace(numdims::Integer, range=(0.0, 1.0), dimtype::Type{<:Real} = Float64; dimdigits::Union{Integer, Nothing} = nothing) =
     RectSearchSpace(fill(range, numdims), dimtype;
                     dimdigits = dimdigits !== nothing && dimdigits >= 0 ? fill(dimdigits, numdims) : nothing)
 
@@ -276,7 +276,7 @@ function _round!(x::AbstractMatrix, ss::MixedPrecisionRectSearchSpace)
     return x
 end
 
-function ensure_type(indiv::AbstractArray{Float64}, dimtype::DataType)
+function ensure_type(indiv::AbstractArray{Float64}, dimtype::Type{<:Real})
     if dimtype == Float64
         return indiv
     elseif dimtype <: Integer
