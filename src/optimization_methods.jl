@@ -45,7 +45,14 @@ const MethodNames = sort!(vcat(SingleObjectiveMethodNames,
 """
 Extend the list of valid methods by an Optimizer initializer method of your choice.
 """
-function add_method_to_bbo(id::Symbol, method::Function)
+add_method_to_bbo(id::Symbol, method::Function) = add_so_method_to_bbo(id, method)
+
+function add_so_method_to_bbo(id::Symbol, method::Function)
    BlackBoxOptim.SingleObjectiveMethods[id] = method
+   push!(BlackBoxOptim.MethodNames, id)
+end
+
+function add_mo_method_to_bbo(id::Symbol, method::Function)
+   BlackBoxOptim.MultiObjectiveMethodNames[id] = method
    push!(BlackBoxOptim.MethodNames, id)
 end
