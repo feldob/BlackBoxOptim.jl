@@ -53,6 +53,6 @@ function add_so_method_to_bbo(id::Symbol, method::Function)
 end
 
 function add_mo_method_to_bbo(id::Symbol, method::Function)
-   BlackBoxOptim.MultiObjectiveMethodNames[id] = method
+   BlackBoxOptim.MultiObjectiveMethods[id] = method
    push!(BlackBoxOptim.MethodNames, id)
 end
